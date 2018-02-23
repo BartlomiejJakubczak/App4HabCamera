@@ -35,14 +35,16 @@ class CapPhoto : Service() {
 
         val cameraNumber = Camera.getNumberOfCameras()
         openCamera(cameraNumber)
+        Log.d(DEBUG_TAG, "Camera opened successfully.")
 
         try {
             /* taking picture here*/
-            camera.setPreviewTexture(SurfaceTexture(Context.MODE_PRIVATE))
-            camera.startPreview()
+            camera.setPreviewTexture(SurfaceTexture(Context.MODE_PRIVATE)) /*This is needed
+            for the application to work, as we are not using any view or surface holder.*/
+            camera.startPreview() //start previewing the picture to be taken
+            Log.d(DEBUG_TAG, "Preview started.")
             cameraConfiguration() //will take the best resolutions for pictures and preview
-            camera.autoFocus(autoFocusCallback)
-            //camera.takePicture(null,null,null, pictureCallback)
+            camera.autoFocus(autoFocusCallback) //autoFocusCallback calls for taking pictures
 
         } catch (e: IOException) {
             Log.d(DEBUG_TAG, "Camera service failed")
@@ -58,13 +60,14 @@ class CapPhoto : Service() {
         StrictMode.setThreadPolicy(policy)
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(intent: Intent?): IBinder? { /*this was necessary to implement
+    as a part of interface */
         return null
     }
 
     /* ------------------------------------FUNCTIONS--------------------------------------------*/
 
-    private fun isExternalStorageWritable(): Boolean {
+    private fun isExternalStorageWritable(): Boolean { //check if memory card is available
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
 
@@ -111,9 +114,12 @@ class CapPhoto : Service() {
     }
 
     private val autoFocusCallback = Camera.AutoFocusCallback{success, camera ->
+        Log.d(DEBUG_TAG, "Auto focus successful: $success")
             if(success){
                 camera.takePicture(null, null,null, pictureCallback)
+                Log.d(DEBUG_TAG, "End of the process.")
             }
+        //TODO We have to figure out the situation in which camera didnt focus
     }
 
     private fun openCamera(cameraCount: Int): Camera{
@@ -137,25 +143,14 @@ class CapPhoto : Service() {
         parameters.setPictureSize(imageSizes[0].width, imageSizes[0].height)
         parameters.pictureFormat = ImageFormat.JPEG
         parameters.autoWhiteBalanceLock = false
-        //parameters.whiteBalance = WHITE_BALANCE_AUTO
         parameters.autoExposureLock = false
         parameters.focusMode = FOCUS_MODE_AUTO //It needs to be auto in order to let focus callback work
+        parameters.set("iso-values", 100) //This will help us in taking pictures in sharp light
+        parameters.set("burst-capture", 1) //I read in some article that this helps to stabilize photos
+        //we could also try modify whitebalance value to for example daylight
 
+        println(parameters.flatten())
         camera.parameters = parameters
+        Log.d(DEBUG_TAG, "Configuration set.")
     }
-
-
-    private val surfaceCallBack = object : SurfaceHolder.Callback {
-        override fun surfaceDestroyed(p0: SurfaceHolder?) {
-        }
-
-        override fun surfaceChanged(p0: SurfaceHolder?, p1: Int, width: Int, height: Int) {
-
-        }
-
-        override fun surfaceCreated(p0: SurfaceHolder?) {
-        }
-    }
-
-
 }
