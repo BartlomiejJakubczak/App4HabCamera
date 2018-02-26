@@ -15,14 +15,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val service = Intent(baseContext, CapPhoto::class.java)
-        val intent = PendingIntent.getService(this, 0, service, 0)
-        val alarm = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.SECOND, 15)
-        alarm.setRepeating(AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                60000,
-                intent)
+//        val intent = PendingIntent.getService(this, 0, service, 0)
+//        val alarm = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+//        val calendar = Calendar.getInstance()
+//        calendar.add(Calendar.SECOND, 15)
+//        alarm.setRepeating(AlarmManager.RTC_WAKEUP,
+//                calendar.timeInMillis,
+//                60000,
+//                intent)
         startService(service)
     }
 

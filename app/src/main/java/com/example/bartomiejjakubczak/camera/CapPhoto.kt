@@ -2,6 +2,7 @@
 
 package com.example.bartomiejjakubczak.camera
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.Camera.Parameters.*
+import android.os.AsyncTask
 import android.os.Environment
 import android.os.IBinder
 import android.os.StrictMode
@@ -26,17 +28,23 @@ class CapPhoto : Service() {
 
     companion object {
         val DEBUG_TAG = "CameraService"
+        var async: TestAsync? = null
     }
 
     private lateinit var camera: Camera
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        async = TestAsync(this)
+        async?.execute()
 
+        return Service.START_STICKY_COMPATIBILITY
+    }
+
+    private fun prepareCamera() {
         val cameraNumber = Camera.getNumberOfCameras()
         openCamera(cameraNumber)
         Log.d(DEBUG_TAG, "Camera opened successfully.")
-
         try {
             /* taking picture here*/
             camera.setPreviewTexture(SurfaceTexture(Context.MODE_PRIVATE)) /*This is needed
@@ -49,7 +57,6 @@ class CapPhoto : Service() {
         } catch (e: IOException) {
             Log.d(DEBUG_TAG, "Camera service failed")
         }
-        return Service.START_STICKY_COMPATIBILITY
     }
 
     override fun onCreate() {
@@ -64,8 +71,6 @@ class CapPhoto : Service() {
     as a part of interface */
         return null
     }
-
-    /* ------------------------------------FUNCTIONS--------------------------------------------*/
 
     private fun isExternalStorageWritable(): Boolean { //check if memory card is available
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
@@ -153,4 +158,28 @@ class CapPhoto : Service() {
         camera.parameters = parameters
         Log.d(DEBUG_TAG, "Configuration set.")
     }
+
+    class TestAsync(@SuppressLint("StaticFieldLeak") private var capPhoto : CapPhoto?) : AsyncTask<Void, Void, Void>() {
+        override fun doInBackground(vararg params: Void?): Void? {
+            Log.d("Async", "background")
+            capPhoto?.prepareCamera()
+            Thread.sleep(5000)
+            return null
+        }
+
+        override fun onPostExecute(result: Void?) {
+            Log.d("Async", "onPost")
+            async = TestAsync(capPhoto)
+            async?.execute()
+            capPhoto = null
+            super.onPostExecute(result)
+        }
+
+        override fun onCancelled() {
+            Log.d("Async", "onCancel")
+            this.cancel(true)
+            super.onCancelled()
+        }
+    }
+
 }
